@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getProject } from "../src/resources/projects.js";
 import { getVenue } from "../src/resources/venues.js";
+import { HttpStatusError } from "../src/http-status-error.js";
 
 const clients = [
   { name: "project", get: getProject, collection: "projects" },
@@ -44,4 +45,25 @@ for (const client of clients) {
       error => error === failure,
     );
   });
+
+  for (const status of [401, 403, 429, 500, 503]) {
+    test(`${client.name}: rejects HTTP ${status} instead of reporting a missing record`, async () => {
+      let requests = 0;
+      await assert.rejects(
+        client.get("existing", {
+          baseUrl,
+          fetchImpl: async () => {
+            requests += 1;
+            return new Response("Upstream rejected this request", { status });
+          },
+        }),
+        error => {
+          assert.ok(error instanceof HttpStatusError);
+          assert.equal(error.status, status);
+          return true;
+        },
+      );
+      assert.equal(requests, 1);
+    });
+  }
 }
