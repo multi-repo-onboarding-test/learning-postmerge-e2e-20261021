@@ -5,6 +5,20 @@ import { HttpStatusError } from "../src/http-status-error.js";
 
 const baseUrl = "https://api.example.test";
 
+for (const [parentId, id] of [[".", "child"], ["..", "child"], ["parent", "."], ["parent", ".."]]) {
+  test(`getProjectDeployment: rejects dot segment identifiers ${JSON.stringify([parentId, id])} before fetch`, async () => {
+    let requests = 0;
+    await assert.rejects(getProjectDeployment(parentId, id, {
+      baseUrl,
+      fetchImpl: async () => {
+        requests += 1;
+        return Response.json({ id });
+      },
+    }), TypeError);
+    assert.equal(requests, 0);
+  });
+}
+
 test("getProjectDeployment: reads a nested resource and encodes both identifiers", async () => {
   const record = { id: "child/one", label: "Primary" };
   const requests = [];
