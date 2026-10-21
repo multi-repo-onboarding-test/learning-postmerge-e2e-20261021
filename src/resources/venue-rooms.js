@@ -1,6 +1,9 @@
 import { HttpStatusError } from "../http-status-error.js";
 
 export async function getVenueRoom(parentId, id, { baseUrl, fetchImpl }) {
+  if (parentId === "." || parentId === ".." || id === "." || id === "..") {
+    throw new TypeError("Resource identifiers must not be dot segments");
+  }
   const url = new URL(
     `/v1/venues/${encodeURIComponent(parentId)}/rooms/${encodeURIComponent(id)}`,
     baseUrl,
